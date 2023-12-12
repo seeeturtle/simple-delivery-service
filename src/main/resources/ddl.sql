@@ -114,6 +114,14 @@ CREATE TABLE `order_cart` (
     PRIMARY KEY (`cart_id`)
 );
 
+CREATE TABLE `user_address` (
+	`address_id`	varchar(100)	NOT NULL,
+	`user_id`	varchar(40)	NOT NULL,
+	`address`	varchar(100)	NULL,
+	`region`	varchar(10)	NULL,
+	`status`	boolean	NULL
+);
+
 INSERT INTO user
 VALUES (1, 'user_example', 'qkrwnstjr@cau.ac.kr', '010-1234-1234', 1);
 
@@ -184,3 +192,5 @@ VALUES (1, 1, 4, "역시 밤에 먹는 치킨은 최고에요", 1),
        (6, 4, 2, "bbbb", 1),
        (7, 5, 1, "cccc", 1),
        (8, 6, 1, "dddd", 1);
+
+INSERt INTO user_address VALUES(1, 1, "동작구 흑석로84 309관 724호", "동작구", 1);

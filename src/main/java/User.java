@@ -14,6 +14,7 @@ public class User {
     private JPanel userPanel;
     private String dbUrl;
     private JScrollPane scrollPane;
+    private JPanel buttonPanel;
 
 
     public User(DatabaseAuthInformation dbAuth, int userId) {
@@ -99,7 +100,7 @@ public class User {
         moveToCartButton.addActionListener(e -> showCartData(storeId)); // showOrderData 함수 호출
 
         // add button panel
-        JPanel buttonPanel = new JPanel();
+        buttonPanel = new JPanel();
         buttonPanel.add(addToCartButton);
         buttonPanel.add(moveToCartButton);
         userPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -363,6 +364,7 @@ public class User {
             @Override
             public void mouseClicked(MouseEvent e) {
                 userPanel.remove(scrollPane);
+                userPanel.remove(buttonPanel);
                 addOrderPanel(storeId, cartId);
                 userPanel.revalidate();
                 userPanel.repaint();
@@ -372,9 +374,30 @@ public class User {
 
         Object[] options = new Object[]{ order};
 
-        JTable cartTable = new JTable(model);
-        JOptionPane.showOptionDialog(null, new JScrollPane(cartTable), "Cart", JOptionPane.YES_NO_OPTION,
+        JPanel cartPanel = new JPanel(new BorderLayout());
+        cartPanel.add(new JScrollPane(new JTable(model)), BorderLayout.CENTER);
+        JPanel footer = new JPanel(new GridLayout(2,1));
+        footer.add(new JLabel("Total Price"));
+        footer.add(new JLabel(String.valueOf(getTotalPrice(cartId))));
+        cartPanel.add(footer, BorderLayout.SOUTH);
+        JOptionPane.showOptionDialog(null, cartPanel, "Cart", JOptionPane.YES_NO_OPTION,
                 JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+    }
+
+    private int getTotalPrice(int cartId) {
+        String query = "SELECT total_price FROM order_cart WHERE cart_id = ?";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(query)) {
+            preparedStatement.setInt(1, cartId);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("total_price");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     private DefaultTableModel getCartTableModel(int storeId, int cartId) {
@@ -402,7 +425,9 @@ public class User {
 
     private void addOrderPanel(int storeId, int cartId) {
         JPanel orderPanel = new JPanel(new BorderLayout());
-        orderPanel.add(new JTable(getCartTableModel(storeId, cartId)), BorderLayout.NORTH);
+        JTable cartTable = new JTable(getCartTableModel(storeId, cartId));
+        cartTable.setPreferredScrollableViewportSize(cartTable.getPreferredSize());
+        orderPanel.add(new JScrollPane(cartTable), BorderLayout.NORTH);
 
         JPanel orderInfoPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         orderInfoPanel.add(new JLabel("Address"));
@@ -416,13 +441,28 @@ public class User {
 
         orderPanel.add(orderInfoPanel, BorderLayout.CENTER);
 
-        orderPanel.add(new JButton("Complete Order"), BorderLayout.SOUTH);
+        JButton orderButton = new JButton("Complete Order");
+        orderPanel.add(orderButton, BorderLayout.SOUTH);
         scrollPane = new JScrollPane(orderPanel);
         userPanel.add(scrollPane, BorderLayout.CENTER);
     }
 
     private String getUserAddress(int userId) {
-        return "서울특별시 동작구 흑석로 84 309관 724호";
+        String addressQuery = "SELECT address FROM user JOIN user_address USING(user_id) WHERE user_id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(addressQuery)) {
+            preparedStatement.setInt(1, userId);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            while (rs.next()) {
+                return rs.getString("address");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     // 수정해야 함
