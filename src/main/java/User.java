@@ -12,6 +12,8 @@ public class User {
     private int userId; // 미리 정해진 user_id
     private JPanel userPanel;
     private String dbUrl;
+    private JScrollPane scrollPane;
+
 
     public User(DatabaseAuthInformation dbAuth, int userId) {
         this.dbAuth = dbAuth;
@@ -30,7 +32,7 @@ public class User {
     private void addCategoryTable() {
         JTable categoryTable = getCategoryTableFromDb();
         categoryTable.removeColumn(categoryTable.getColumnModel().getColumn(0));
-        JScrollPane scrollPane = new JScrollPane(categoryTable);
+        scrollPane = new JScrollPane(categoryTable);
         userPanel.add(scrollPane, BorderLayout.CENTER);
 
         categoryTable.addMouseListener(new MouseAdapter() {
@@ -51,7 +53,7 @@ public class User {
     private void addStoreTable(int categoryId) {
         JTable storeTable = getStoreTableFromDb(categoryId);
         storeTable.removeColumn(storeTable.getColumnModel().getColumn(0));
-        JScrollPane scrollPane = new JScrollPane(storeTable);
+        scrollPane = new JScrollPane(storeTable);
         userPanel.add(scrollPane, BorderLayout.CENTER);
 
         storeTable.addMouseListener(new MouseAdapter() {
@@ -72,7 +74,7 @@ public class User {
     private void addMenuTable(int storeId) {
         JTable menuTable = getStoreMenuTableFromDb(storeId);
         menuTable.removeColumn(menuTable.getColumnModel().getColumn(0));
-        JScrollPane scrollPane = new JScrollPane(menuTable);
+        scrollPane = new JScrollPane(menuTable);
         userPanel.add(scrollPane, BorderLayout.CENTER);
 
         menuTable.setRowSelectionAllowed(true);
@@ -93,7 +95,7 @@ public class User {
 
         // "Move To Cart"
         JButton moveToCartButton = new JButton("Move To Cart");
-        moveToCartButton.addActionListener(e -> showOrderData()); // showOrderData 함수 호출
+        moveToCartButton.addActionListener(e -> showCartData(storeId)); // showOrderData 함수 호출
 
         // add button panel
         JPanel buttonPanel = new JPanel();
@@ -350,6 +352,50 @@ public class User {
         }
     }
 
+    private void showCartData(int storeId) {
+        int cartId = createOrGetCart(storeId);
+
+        DefaultTableModel model = new DefaultTableModel(new String[]{"Menu", "Quantity", "Price"}, 0);
+
+        String query = "SELECT sm.name as menu, om.order_menu_quantity as quantity, om.price as price " +
+                "FROM order_menu om JOIN store_menu sm ON om.cart_id = ? AND om.menu_id2 = sm.menu_id AND sm.store_id = ?";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setInt(1, cartId);
+            stmt.setInt(2, storeId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String menu = rs.getString("menu");
+                Integer quantity = rs.getInt("quantity");
+                Integer price = rs.getInt("price");
+                model.addRow(new Object[] {menu, quantity, price});
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        JButton order = new JButton("Order");
+        order.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                userPanel.remove(scrollPane);
+                addOrderPanel();
+                userPanel.revalidate();
+                userPanel.repaint();
+                JOptionPane.getRootFrame().dispose();
+            }
+        });
+
+        Object[] options = new Object[]{ order};
+
+        JTable cartTable = new JTable(model);
+        JOptionPane.showOptionDialog(null, new JScrollPane(cartTable), "Cart", JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+    }
+
+    private void addOrderPanel() {
+    }
 
     // 수정해야 함
     private void showOrderData() {
