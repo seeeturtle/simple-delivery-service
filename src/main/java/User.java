@@ -213,8 +213,87 @@ public class User {
         }
     }
 
-
     private void addToCart(int storeId, int menuId, int quantity, int price) {
+        int cartId = createOrGetCart(storeId);
+
+        int order_menu_id = -1;
+        String checkMenuAlreadyExistsQuery = "SELECT * FROM order_menu WHERE cart_id = ? AND menu_id2 = ?";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement pstmt = conn.prepareStatement(checkMenuAlreadyExistsQuery)) {
+
+            pstmt.setInt(1, cartId);
+            pstmt.setInt(2, menuId);
+            ResultSet resultSet = pstmt.executeQuery();
+            if (resultSet.next()) {
+                order_menu_id = resultSet.getInt("order_menu_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        if (order_menu_id >= 0) {
+            String updateQuery = "UPDATE order_menu SET order_menu_quantity = order_menu_quantity + ? WHERE order_menu_id = ?";
+
+            try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+                 PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
+
+                pstmt.setInt(1, quantity);
+                pstmt.setInt(2, order_menu_id);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } else {
+            String insertQuery = "INSERT INTO order_menu (cart_id, menu_id2, order_menu_quantity, price, status) VALUES (?, ?, ?, ?, 1) ";
+
+            try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+                 PreparedStatement pstmt = conn.prepareStatement(insertQuery)) {
+
+                pstmt.setInt(1, cartId);
+                pstmt.setInt(2, menuId);
+                pstmt.setInt(3, quantity);
+                pstmt.setInt(4, price);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        updateCartTotalPrice(cartId);
+    }
+
+    private int createOrGetCart(int storeId) {
+        String checkCartExistsQuery = "SELECT * FROM order_cart WHERE store_id = ?";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement pstmt = conn.prepareStatement(checkCartExistsQuery)) {
+
+            pstmt.setInt(1, storeId);
+            ResultSet resultSet = pstmt.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("cart_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        String createCartQuery = "INSERT INTO order_cart (store_id, total_price, status) VALUES (?, 0, 1)";
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement pstmt = conn.prepareStatement(createCartQuery, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setInt(1, storeId);
+            pstmt.executeUpdate();
+            ResultSet rs = pstmt.getGeneratedKeys();
+            if (rs.next()) {
+                return rs.getInt(1); // 생성된 cart_id를 반환
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+
+    private void addToCart2(int storeId, int menuId, int quantity, int price) {
         // 새로운 cart 생성하고 get cart_id
         int cartId = createNewCart(storeId); // storeId는 현재 선택된 가게의 ID
 

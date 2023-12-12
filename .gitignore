@@ -41,3 +41,10 @@ bin/
 ### Mac OS ###
 .DS_Store
 /src/main/resources/mysql.auth
+!/.idea/gradle.xml
+
+!/.idea/misc.xml
+
+!/.idea/vcs.xml
+
+!/.idea/workspace.xml
