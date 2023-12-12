@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.sql.*;
+import java.util.BitSet;
 
 
 // define user class
@@ -355,6 +356,28 @@ public class User {
     private void showCartData(int storeId) {
         int cartId = createOrGetCart(storeId);
 
+        DefaultTableModel model = getCartTableModel(storeId, cartId);
+
+        JButton order = new JButton("Order");
+        order.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                userPanel.remove(scrollPane);
+                addOrderPanel(storeId, cartId);
+                userPanel.revalidate();
+                userPanel.repaint();
+                JOptionPane.getRootFrame().dispose();
+            }
+        });
+
+        Object[] options = new Object[]{ order};
+
+        JTable cartTable = new JTable(model);
+        JOptionPane.showOptionDialog(null, new JScrollPane(cartTable), "Cart", JOptionPane.YES_NO_OPTION,
+                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+    }
+
+    private DefaultTableModel getCartTableModel(int storeId, int cartId) {
         DefaultTableModel model = new DefaultTableModel(new String[]{"Menu", "Quantity", "Price"}, 0);
 
         String query = "SELECT sm.name as menu, om.order_menu_quantity as quantity, om.price as price " +
@@ -374,27 +397,32 @@ public class User {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
-        JButton order = new JButton("Order");
-        order.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                userPanel.remove(scrollPane);
-                addOrderPanel();
-                userPanel.revalidate();
-                userPanel.repaint();
-                JOptionPane.getRootFrame().dispose();
-            }
-        });
-
-        Object[] options = new Object[]{ order};
-
-        JTable cartTable = new JTable(model);
-        JOptionPane.showOptionDialog(null, new JScrollPane(cartTable), "Cart", JOptionPane.YES_NO_OPTION,
-                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+        return model;
     }
 
-    private void addOrderPanel() {
+    private void addOrderPanel(int storeId, int cartId) {
+        JPanel orderPanel = new JPanel(new BorderLayout());
+        orderPanel.add(new JTable(getCartTableModel(storeId, cartId)), BorderLayout.NORTH);
+
+        JPanel orderInfoPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        orderInfoPanel.add(new JLabel("Address"));
+        orderInfoPanel.add(new JLabel(getUserAddress(1)));
+
+        orderInfoPanel.add(new JLabel("To Owner"));
+        orderInfoPanel.add(new JTextArea());
+
+        orderInfoPanel.add(new JLabel("To Rider"));
+        orderInfoPanel.add(new JTextArea());
+
+        orderPanel.add(orderInfoPanel, BorderLayout.CENTER);
+
+        orderPanel.add(new JButton("Complete Order"), BorderLayout.SOUTH);
+        scrollPane = new JScrollPane(orderPanel);
+        userPanel.add(scrollPane, BorderLayout.CENTER);
+    }
+
+    private String getUserAddress(int userId) {
+        return "서울특별시 동작구 흑석로 84 309관 724호";
     }
 
     // 수정해야 함
