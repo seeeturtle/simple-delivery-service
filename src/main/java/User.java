@@ -110,7 +110,7 @@ public class User {
 
     private JTable getCategoryTableFromDb() {
         DefaultTableModel model = new DefaultTableModel(new String[]{"category_id", "title"}, 0);
-        String query = "SELECT category_id, title FROM store_category"; // query
+        String query = "SELECT category_id, title FROM store_category WHERE status = 1"; // query
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              Statement stmt = conn.createStatement();
@@ -221,7 +221,7 @@ public class User {
         int cartId = createOrGetCart(storeId);
 
         int order_menu_id = -1;
-        String checkMenuAlreadyExistsQuery = "SELECT * FROM order_menu WHERE cart_id = ? AND menu_id2 = ?";
+        String checkMenuAlreadyExistsQuery = "SELECT * FROM order_menu WHERE cart_id = ? AND menu_id2 = ? AND status = 1";
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement pstmt = conn.prepareStatement(checkMenuAlreadyExistsQuery)) {
 
@@ -236,7 +236,7 @@ public class User {
         }
 
         if (order_menu_id >= 0) {
-            String updateQuery = "UPDATE order_menu SET order_menu_quantity = order_menu_quantity + ? WHERE order_menu_id = ?";
+            String updateQuery = "UPDATE order_menu SET order_menu_quantity = order_menu_quantity + ? WHERE order_menu_id = ? AND status = 1";
 
             try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
                  PreparedStatement pstmt = conn.prepareStatement(updateQuery)) {
@@ -267,7 +267,7 @@ public class User {
     }
 
     private int createOrGetCart(int storeId) {
-        String checkCartExistsQuery = "SELECT * FROM order_cart WHERE store_id = ?";
+        String checkCartExistsQuery = "SELECT * FROM order_cart WHERE store_id = ? AND status = 1";
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement pstmt = conn.prepareStatement(checkCartExistsQuery)) {
 
@@ -341,7 +341,7 @@ public class User {
 
     private void updateCartTotalPrice(int cartId) {
         // order_cart 테이블의 total_price를 업데이트
-        String updateTotalPriceQuery = "UPDATE order_cart SET total_price = (SELECT SUM(price * order_menu_quantity) FROM order_menu WHERE cart_id = ?) WHERE cart_id = ?";
+        String updateTotalPriceQuery = "UPDATE order_cart SET total_price = (SELECT SUM(price * order_menu_quantity) FROM order_menu WHERE cart_id = ? AND status = 1) WHERE cart_id = ?";
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement pstmt = conn.prepareStatement(updateTotalPriceQuery)) {
@@ -385,7 +385,7 @@ public class User {
     }
 
     private int getTotalPrice(int cartId) {
-        String query = "SELECT total_price FROM order_cart WHERE cart_id = ?";
+        String query = "SELECT total_price FROM order_cart WHERE cart_id = ? AND status = 1";
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement preparedStatement = conn.prepareStatement(query)) {
             preparedStatement.setInt(1, cartId);
@@ -404,7 +404,7 @@ public class User {
         DefaultTableModel model = new DefaultTableModel(new String[]{"Menu", "Quantity", "Price"}, 0);
 
         String query = "SELECT sm.name as menu, om.order_menu_quantity as quantity, om.price as price " +
-                "FROM order_menu om JOIN store_menu sm ON om.cart_id = ? AND om.menu_id2 = sm.menu_id AND sm.store_id = ?";
+                "FROM order_menu om JOIN store_menu sm ON om.cart_id = ? AND om.menu_id2 = sm.menu_id AND sm.store_id = ? AND om.status = 1";
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement stmt = conn.prepareStatement(query)) {
 
@@ -430,21 +430,55 @@ public class User {
         orderPanel.add(new JScrollPane(cartTable), BorderLayout.NORTH);
 
         JPanel orderInfoPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        String address = getUserAddress(userId);
         orderInfoPanel.add(new JLabel("Address"));
-        orderInfoPanel.add(new JLabel(getUserAddress(1)));
+        orderInfoPanel.add(new JLabel(address));
 
         orderInfoPanel.add(new JLabel("To Owner"));
-        orderInfoPanel.add(new JTextArea());
+        JTextArea toOwner = new JTextArea();
+        orderInfoPanel.add(toOwner);
 
         orderInfoPanel.add(new JLabel("To Rider"));
-        orderInfoPanel.add(new JTextArea());
+        JTextArea toRider = new JTextArea();
+        orderInfoPanel.add(toRider);
 
         orderPanel.add(orderInfoPanel, BorderLayout.CENTER);
 
         JButton orderButton = new JButton("Complete Order");
+        orderButton.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                createOrder(cartId, userId, storeId, toOwner.getText(), toRider.getText());
+                emptyCart(cartId);
+                userPanel.remove(scrollPane);
+                addCategoryTable();
+                userPanel.repaint();
+                userPanel.revalidate();
+            }
+        });
         orderPanel.add(orderButton, BorderLayout.SOUTH);
         scrollPane = new JScrollPane(orderPanel);
         userPanel.add(scrollPane, BorderLayout.CENTER);
+    }
+
+    private void emptyCart(int cartId) {
+        String updateCartQuery = "UPDATE order_cart SET status = 0 WHERE cart_id = ? AND status = 1";
+        String updateOrderMenuQuery = "UPDATE order_menu SET status = 0 WHERE cart_id = ? AND status = 1";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(updateCartQuery);
+             PreparedStatement preparedStatement1 = conn.prepareStatement(updateOrderMenuQuery)) {
+            preparedStatement.setInt(1, cartId);
+            preparedStatement1.setInt(1, cartId);
+            preparedStatement.executeUpdate();
+            preparedStatement1.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void createOrder(int cartId, int userId, int storeId, String toOwnerText, String toRiderText) {
+
     }
 
     private String getUserAddress(int userId) {
