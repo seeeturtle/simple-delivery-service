@@ -40,10 +40,9 @@ CREATE TABLE `order_menu` (
 );
 
 CREATE TABLE `order` (
-	`order_id`	int	NOT NULL,
+	`order_id`	int	NOT NULL AUTO_INCREMENT,
 	`cart_id`	int	NOT NULL,
 	`user_id`	int	NOT NULL,
-	`store_id`	int	NOT NULL,
 	`address_id`	varchar(100)	NOT NULL,
 	`coupon_id`	int	NOT NULL,
 	`payment_id`	int	NOT NULL,
@@ -56,7 +55,10 @@ CREATE TABLE `order` (
 	`total_pay`	int	NULL,
 	`order_status`	varchar(10)	NULL,
 	`payment_historyID`	int	NOT NULL,
-	`status`	boolean	NULL
+	`status`	boolean	NULL,
+	`store_id`	int	NOT NULL,
+	`owner_id`	int	NOT NULL,
+    PRIMARY KEY(order_id)
 );
 
 CREATE TABLE `user` (
@@ -120,6 +122,22 @@ CREATE TABLE `user_address` (
 	`address`	varchar(100)	NULL,
 	`region`	varchar(10)	NULL,
 	`status`	boolean	NULL
+);
+
+CREATE TABLE `rider_available_zone` (
+	`rider_available_zone_id`	int	NOT NULL,
+	`rider_id`	int	NOT NULL,
+	`zone_name`	varchar(10)	NULL,
+	`status`	boolean	NULL
+);
+
+CREATE TABLE `standby_order` (
+	`standby_order_id`	int	NOT NULL,
+	`order_id2`	int	NOT NULL,
+	`rider_id`	int	NOT NULL,
+	`standby_status`	boolean	NULL,
+	`status`	boolean	NULL,
+	`owner_accept`	boolean	NULL
 );
 
 INSERT INTO user
@@ -193,4 +211,28 @@ VALUES (1, 1, 4, "역시 밤에 먹는 치킨은 최고에요", 1),
        (7, 5, 1, "cccc", 1),
        (8, 6, 1, "dddd", 1);
 
-INSERt INTO user_address VALUES(1, 1, "동작구 흑석로84 309관 724호", "동작구", 1);
+INSERT INTO user_address VALUES(1, 1, "동작구 흑석로84 309관 724호", "동작구", 1);
+
+INSERT INTO rider_available_zone VALUES(1, 1, "동작구", 1);
+
+DELIMITER //
+CREATE TRIGGER order_insert_trigger AFTER INSERT ON `order`
+    FOR EACH ROW
+BEGIN
+    DECLARE region_val VARCHAR(255);
+    DECLARE rider_id_val INT;
+    DECLARE random_id INT;
+    DECLARE rider_zone VARCHAR(255);
+
+    SELECT region INTO region_val FROM user_address WHERE address_id = NEW.address_id;
+
+    SELECT zone_name INTO rider_zone FROM rider_available_zone WHERE zone_name = region_val;
+
+    SELECT rider_id INTO rider_id_val FROM rider_available_zone WHERE zone_name = rider_zone;
+
+    SET random_id = FLOOR(RAND() * 1000000) + 1;
+
+    INSERT INTO standby_order (standby_order_id, order_id2, rider_id, standby_status, status, owner_accept)
+    VALUES (random_id, NEW.order_id, rider_id_val, 1, 1, 0);
+END //
+DELIMITER ;

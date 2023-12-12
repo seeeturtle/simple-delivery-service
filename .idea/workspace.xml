@@ -4,9 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ad773859-14e1-49de-b04b-a197ec7a713b" name="Changes" comment="adjust some ui">
+    <list default="true" id="ad773859-14e1-49de-b04b-a197ec7a713b" name="Changes" comment="apply status">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/ddl.sql" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/ddl.sql" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,7 +115,15 @@
       <option name="project" value="LOCAL" />
       <updated>1702384470711</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="apply status">
+      <option name="closed" value="true" />
+      <created>1702387406466</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1702387406466</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -136,6 +145,7 @@
     <MESSAGE value="장바구니 화면 구현" />
     <MESSAGE value="Order 화면 구성" />
     <MESSAGE value="adjust some ui" />
-    <option name="LAST_COMMIT_MESSAGE" value="adjust some ui" />
+    <MESSAGE value="apply status" />
+    <option name="LAST_COMMIT_MESSAGE" value="apply status" />
   </component>
 </project>

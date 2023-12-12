@@ -429,7 +429,11 @@ public class User {
         cartTable.setPreferredScrollableViewportSize(cartTable.getPreferredSize());
         orderPanel.add(new JScrollPane(cartTable), BorderLayout.NORTH);
 
-        JPanel orderInfoPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        JPanel orderInfoPanel = new JPanel(new GridLayout(4, 2, 5, 5));
+        int totalPrice = getTotalPrice(cartId);
+        orderInfoPanel.add(new JLabel("Total Price"));
+        orderInfoPanel.add(new JLabel(String.valueOf(totalPrice)));
+
         String address = getUserAddress(userId);
         orderInfoPanel.add(new JLabel("Address"));
         orderInfoPanel.add(new JLabel(address));
@@ -478,7 +482,46 @@ public class User {
     }
 
     private void createOrder(int cartId, int userId, int storeId, String toOwnerText, String toRiderText) {
+        String insertQuery = "INSERT INTO `order` (cart_id, user_id, store_id, address_id, coupon_id, payment_id, total_price," +
+                "to_owner_memo, to_rider_memo, payment_historyID, owner_id, status) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
 
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(insertQuery)) {
+            preparedStatement.setInt(1, cartId);
+            preparedStatement.setInt(2, userId);
+            preparedStatement.setInt(3, storeId);
+            preparedStatement.setInt(4, getUserAddressId(userId));
+            preparedStatement.setInt(5, 1);
+            preparedStatement.setInt(6, 1);
+            preparedStatement.setInt(7, getTotalPrice(cartId));
+            preparedStatement.setString(8, toOwnerText);
+            preparedStatement.setString(9, toRiderText);
+            preparedStatement.setInt(10, 1);
+            preparedStatement.setInt(11, 1);
+
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int getUserAddressId(int userId) {
+        String addressQuery = "SELECT address_id FROM user JOIN user_address USING(user_id) WHERE user_id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(addressQuery)) {
+            preparedStatement.setInt(1, userId);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            while (rs.next()) {
+                return rs.getInt("address_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     private String getUserAddress(int userId) {
