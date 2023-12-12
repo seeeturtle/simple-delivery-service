@@ -15,9 +15,11 @@ public class User {
     private String dbUrl;
     private JScrollPane scrollPane;
     private JPanel buttonPanel;
+    private Owner owner;
 
 
-    public User(DatabaseAuthInformation dbAuth, int userId) {
+    public User(DatabaseAuthInformation dbAuth, int userId, Owner owner) {
+        this.owner = owner;
         this.dbAuth = dbAuth;
         this.userId = userId;
         this.dbUrl = "jdbc:mysql://" + dbAuth.getHost() + ":" + dbAuth.getPort() + "/" + dbAuth.getDatabase_name();
@@ -454,6 +456,7 @@ public class User {
             public void mouseClicked(MouseEvent e) {
                 createOrder(cartId, userId, storeId, toOwner.getText(), toRider.getText());
                 emptyCart(cartId);
+                owner.updateState();
                 userPanel.remove(scrollPane);
                 addCategoryTable();
                 userPanel.repaint();
@@ -497,13 +500,31 @@ public class User {
             preparedStatement.setInt(7, getTotalPrice(cartId));
             preparedStatement.setString(8, toOwnerText);
             preparedStatement.setString(9, toRiderText);
-            preparedStatement.setInt(10, 1);
+            preparedStatement.setInt(10, getOwnerId(storeId));
             preparedStatement.setInt(11, 1);
 
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private int getOwnerId(int storeId) {
+        String ownerQuery = "SELECT owner_id FROM store WHERE owner_id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(ownerQuery)) {
+            preparedStatement.setInt(1, storeId);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            while (rs.next()) {
+                return rs.getInt("owner_id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     private int getUserAddressId(int userId) {

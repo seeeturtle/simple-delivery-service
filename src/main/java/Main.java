@@ -9,8 +9,8 @@ public class Main {
             return;
         }
 
-        User user = new User(dbAuth, 1); // example user_id for program is 1.
-        Owner owner = new Owner(dbAuth);
+        Owner owner = new Owner(dbAuth, 1);
+        User user = new User(dbAuth, 1, owner); // example user_id for program is 1.
         Rider rider = new Rider(dbAuth, 1);
 
         JFrame frame = new JFrame("Application");
