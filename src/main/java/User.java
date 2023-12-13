@@ -486,8 +486,8 @@ public class User {
 
     private void createOrder(int cartId, int userId, int storeId, String toOwnerText, String toRiderText) {
         String insertQuery = "INSERT INTO `order` (cart_id, user_id, store_id, address_id, coupon_id, payment_id, total_price," +
-                "to_owner_memo, to_rider_memo, payment_historyID, owner_id, status) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
+                "to_owner_memo, to_rider_memo, payment_historyID, owner_id, delivery_fee, status) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)";
 
         try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
              PreparedStatement preparedStatement = conn.prepareStatement(insertQuery)) {
@@ -502,11 +502,30 @@ public class User {
             preparedStatement.setString(9, toRiderText);
             preparedStatement.setInt(10, getOwnerId(storeId));
             preparedStatement.setInt(11, 1);
+            preparedStatement.setInt(12, getDeliveryFee(storeId));
 
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private int getDeliveryFee(int storeId) {
+        String selectQuery = "SELECT delivery_fee FROM store_information WHERE store_id = ?";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl, dbAuth.getUsername(), dbAuth.getPassword());
+             PreparedStatement preparedStatement = conn.prepareStatement(selectQuery)) {
+            preparedStatement.setInt(1, storeId);
+            ResultSet rs = preparedStatement.executeQuery();
+
+            while (rs.next()) {
+                return rs.getInt("delivery_fee");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     private int getOwnerId(int storeId) {

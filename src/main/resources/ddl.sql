@@ -140,6 +140,14 @@ CREATE TABLE `standby_order` (
 	`owner_accept`	boolean	NULL
 );
 
+CREATE TABLE `rider_order_allocation` (
+	`rider_order_allocation_id`	int	NOT NULL AUTO_INCREMENT,
+	`standby_order_id`	int	NOT NULL,
+	`allocation_status`	boolean	NULL,
+	`status`	boolean	NULL,
+    PRIMARY KEY(rider_order_allocation_id)
+);
+
 INSERT INTO user
 VALUES (1, 'user_example', 'qkrwnstjr@cau.ac.kr', '010-1234-1234', 1);
 

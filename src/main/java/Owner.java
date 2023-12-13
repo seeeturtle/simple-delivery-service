@@ -12,6 +12,7 @@ public class Owner {
     private String dbUrl;
     private JScrollPane scrollPane;
     private JTable table;
+    private Rider rider;
 
     public Owner(DatabaseAuthInformation dbAuth) {
         this.dbAuth = dbAuth;
@@ -19,10 +20,11 @@ public class Owner {
         this.dbUrl = "jdbc:mysql://" + dbAuth.getHost() + ":" + dbAuth.getPort() + "/" + dbAuth.getDatabase_name();
     }
 
-    public Owner(DatabaseAuthInformation dbAuth, int ownerID) {
+    public Owner(DatabaseAuthInformation dbAuth, int ownerID, Rider rider) {
         this.dbAuth = dbAuth;
         this.ownerID = ownerID;
         this.dbUrl = "jdbc:mysql://" + dbAuth.getHost() + ":" + dbAuth.getPort() + "/" + dbAuth.getDatabase_name();
+        this.rider = rider;
     }
 
     public JPanel createOwnerPanel() {
@@ -90,6 +92,8 @@ public class Owner {
              PreparedStatement preparedStatement = conn.prepareStatement(updateQuery)) {
             preparedStatement.setInt(1, standByOrderId);
             preparedStatement.executeUpdate();
+
+            rider.updateState();
         } catch (SQLException e) {
             e.printStackTrace();
         }
